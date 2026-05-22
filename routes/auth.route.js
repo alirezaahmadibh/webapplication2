@@ -1,65 +1,73 @@
 const express = require('express'); // Import the Express framework for building web applications
 const User = require('../model/user.model');  // Import the User model to interact with the users table in the database
-const { where } = require('sequelize');
-const router = express.Router();  // Create a new router instance to define routes related to authentication
+const router = express.Router();  // Create a new router instance
+const jwt = require('jsonwebtoken');
 
-
-
-router.get('/login' , (req, res) => {
-  res.render('login') // ./view/login.ejs
-})  // Define a route for GET requests to /login that renders the login view (e.g., login.ejs)
-
+router.get('/login', (req, res) => {
+  res.render('login'); // ./views/login.ejs
+});
 
 router.get('/register', (req, res) => {
-  res.render('register')
+  res.render('register');
+});
 
-})
-
-router.post('/login', async  (req, res) => {
-  const { email, password } = req.body
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  const secretkey = 'your_secret_key';
 
   const user = await User.findOne({
     where: {
       email
     }
-  })
-// Define a route for POST requests to /login that handles user authentication by checking the provided email and password against the database records. It sends appropriate responses based on whether the user is found and if the password matches.
-
+  });
 
   if (user) {
     if (user.password == password) {
-      res.send("Hi to panel")
+      const payload = {
+        id: user.id,
+        email: user.email
+      };
+
+      const token = jwt.sign(payload, secretkey, {
+        expiresIn: '3h',
+      });
+
+      res.cookie('token', token, {
+        maxAge: 3 * 60 * 60 * 1000,
+        path: '/'
+      });
+
+      res.redirect("/profile");
+
     } else {
-       res.render('login', {errorMessage : "the Password is incorrect"})
+      res.render('login', { errorMessage: "the Password is incorrect" });
     }
   } else {
-      res.render('login', {"errorMessage": "the email is incorrect"})
+    res.render('login', { errorMessage: "the email is incorrect" });
   }
-})  // Define a route for POST requests to /login that handles user authentication by checking the provided email and password against the database records. It sends appropriate responses based on whether the user is found and if the password matches.
-
-
+});
 
 router.post('/register', async (req, res) => {
-  const { email, password, firstname, lastname } = req.body
+  const { email, password, firstname, lastname } = req.body;
 
   const user = await User.findOne({
     where: {
-      email 
+      email
     }
-  })
+  });
 
   if (user) {
-    res.render('register', {"errorMesage": "User already exist!"})
-  } else { 
-    const user = await  User.create({
+    res.render('register', { errorMessage: "User already exist!" });
+  } else {
+    const user = await User.create({
       lastName: lastname,
       firstName: firstname,
       password,
       email
-    })
+    });
 
-    res.send('User registerd.')
-
+    res.send('User registered.');
   }
-})
-module.exports = router
+});
+
+module.exports = router;
