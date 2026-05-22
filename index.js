@@ -11,6 +11,7 @@ app.use(express.json()); // Middleware to parse JSON bodies (for API requests)
 app.use('/auth', authRoutes ) // Use the authentication routes for any requests starting with /auth
 
 
+
 app.set('view engine', 'ejs') // Set the view engine to EJS for rendering views (e.g., login page)
 app.set('views', path.join(__dirname, 'views')) // Set the directory for the views to be the 'views' folder in the current directory
 
