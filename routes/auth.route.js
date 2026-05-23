@@ -1,8 +1,29 @@
 const express = require('express'); // Import the Express framework for building web applications
 const User = require('../model/user.model');  // Import the User model to interact with the users table in the database
 const router = express.Router();  // Create a new router instance
-const jwt = require('jsonwebtoken');
+const jwt = require('jsonwebtoken'); // Import the jsonwebtoken library to handle JWT token creation and verification for authentication purposes
 const ResetPassword = require('../model/reset-password-model'); // Import the ResetPassword model to interact with the reset_passwords table in the database for handling password reset tokens
+const crypto = require('crypto'); // Import the crypto module to generate secure random tokens for password reset functionality
+const mailgun = require('mailgun-js'); // Import the mailgun-js library to send emails for password reset instructions (not used in the provided code but can be implemented for sending emails)  
+const formData = require('form-data'); // Import the form-data library to handle form data when sending emails with attachments (not used in the provided code but can be implemented for sending emails with attachments)  
+
+
+function generateToken() {
+    return new Promise((resolve, reject) => {
+        crypto.randomBytes(32, (err, buffer) => {
+            if (err) {
+                reject(err);
+            } else {
+                const token = buffer.toString('hex');
+                resolve(token);
+            }
+        });
+    });
+} // Define a function named generateToken that returns a promise which generates a secure random token using the crypto module's randomBytes method. The generated token is returned as a hexadecimal string. This function can be used to create unique tokens for password reset functionality or other purposes where a secure token is needed. 
+
+
+
+// Define routes for authentication-related functionalities such as login, registration, and password reset. These routes will handle HTTP requests related to user authentication and interact with the User and ResetPassword models to perform database operations as needed. The routes will also use JWT for token-based authentication and may include error handling for various scenarios (e.g., incorrect email or password, user already exists, etc.).
 
 router.get('/login', (req, res) => {
   res.render('login'); // ./views/login.ejs
@@ -71,23 +92,34 @@ router.post('/register', async (req, res) => {
 }); // Define a POST route for user registration that checks if a user with the provided email already exists in the database, and if not, creates a new user record with the provided information (first name, last name, email, and password) and sends a response indicating that the user has been registered successfully. If a user with the same email already exists, it renders the registration view with an error message.
 
 
-router.post('/forget-password', async (req, res) => {
-  const { email } = req.body; // Get the email from the request body
+router.post('/forget-password/:token', async (req, res) => {
+  const { token } = req.params; // Get the token from the URL parameters to identify the password reset request and verify its validity before allowing the user to reset their password. The token is typically generated and stored in the database when the user initiates a password reset request, and it is used to ensure that only authorized users can reset their passwords by verifying the token against the stored value in the database.
 
-  const user = await User.findOne({
+  const reset_password = await ResetPassword.findOne({
     where: {
-      email
+      token
     }
-  }); // Find a user in the database with the provided email address to check if the email exists in the system. If a user with the provided email is found, it proceeds to generate a password reset token and send password reset instructions to the user's email. If no user with the provided email is found, it renders the forget-password view with an error message indicating that the email is incorrect.
+  }); // Find the password reset request in the database using the provided token to verify its validity and ensure that it corresponds to an existing password reset request. This step is crucial for security purposes to prevent unauthorized password resets and ensure that only valid requests are processed.
 
-  if (user) {
-    // Here you would typically generate a password reset token and send an email to the user with instructions on how to reset their password.
-    res.send('Password reset instructions have been sent to your email.');
+  if (reset_password) {
+    const user = await User.findOne({
+      where: {
+        email: reset_password.email
+      }
+    }); // Find the user associated with the password reset request using the email stored in the ResetPassword model. This allows the application to identify which user's password needs to be reset based on the token provided in the URL parameters.
+
+    if (user) {
+      user.password = password; // Update the user's password with the new password provided in the request body. This step allows the user to reset their password after successfully verifying the token and ensuring that the password reset request is valid.
+      
+      await user.save(); // Save the updated user record to the database to persist the changes made to the user's password. This step is necessary to ensure that the new password is stored in the database and can be used for future authentication attempts. 
+      res.redirect('/auth/login'); // After successfully resetting the password, redirect the user to the login page so they can log in with their new password.
+    } else {
+      res.redirect('/auth/login'); // If the user associated with the password reset request is not found in the database, redirect to the login page as a fallback to prevent unauthorized access and ensure that only valid password reset requests are processed.
+    }
   } else {
-    res.render('forget-password', { errorMessage: "the email is incorrect" });
+    res.redirect('/auth/login'); // If the password reset request is not found in the database (i.e., the token is invalid or expired), redirect to the login page as a fallback to prevent unauthorized access and ensure that only valid password reset requests are processed.
   }
-}); // Define a POST route for handling forgotten password requests that checks if a user with the provided email exists in the database, and if so, sends a response indicating that password reset instructions have been sent to the user's email. If no user with the provided email exists, it renders the forget-password view with an error message.
-
+}); // Define a POST route for handling password reset requests that takes a token as a URL parameter, verifies its validity against the ResetPassword model in the database, and if valid, allows the user to reset their password by updating the corresponding user record in the User model. After successfully resetting the password, it redirects the user to the login page. If the token is invalid or expired, it also redirects to the login page as a fallback. 
 
 
 module.exports = router;
