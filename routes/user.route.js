@@ -1,4 +1,4 @@
-const express = require('express'); // const bodyParser = require('body-parser'); // Not needed in Express 4.16+ as it has built-in body parsing
+const express = require('express'); // Import the Express framework to create a web application and define routes for handling HTTP requests
 const router = express.Router(); // Create a new router instance to define routes related to user profiles and other user-related functionalities
 const jwt = require('jsonwebtoken'); // Import the jsonwebtoken library to handle JWT token creation and verification   
 const User = require('../model/user.model');// Import the User model to interact with the users table in the database and perform operations such as finding a user by ID or email, and retrieving user information for the profile page
@@ -14,16 +14,16 @@ router.get('/profile', async (req, res) => {
             const user = await User.findOne({
                 where: {
                     id: decoded.id
-                } // Find the user in the database using the ID from the decoded token
+                }
             }); // Find the user in the database using the ID from the decoded token
 
             if (user) {
-                res.render('profile', { user });
+                res.render('profile', { user }); // If the user is found in the database, render the profile view and pass the user information to it for display
             } else {
-                res.redirect('/auth/login');
+                res.redirect('/auth/login'); // If the user is not found in the database, redirect to the login page
             }
         } catch (error) {
-            console.error('Error verifying token:', error);
+            console.error('Error verifying token:', error); //
             res.redirect('/auth/login');
         }
     } else {

@@ -27,11 +27,15 @@ function generateToken() {
 
 router.get('/login', (req, res) => {
   res.render('login'); // ./views/login.ejs
-});
+}); // Define GET routes for rendering the login and registration views. These routes will serve the corresponding EJS templates when accessed, allowing users to interact with the authentication pages of the application. The views will likely include forms for user input (e.g., email and password) that will be submitted to the corresponding POST routes for processing authentication requests.
 
 router.get('/register', (req, res) => {
   res.render('register');
-});
+}); // Define GET routes for rendering the login and registration views. These routes will serve the corresponding EJS templates when accessed, allowing users to interact with the authentication pages of the application. The views will likely include forms for user input (e.g., email and password) that will be submitted to the corresponding POST routes for processing authentication requests.
+
+router.get('/forget-password', (req, res) => {
+  res.render('forget-password');
+}); // Define GET routes for rendering the login, registration, and forget password views. These routes will serve the corresponding EJS templates when accessed, allowing users to interact with the authentication pages of the application. The views will likely include forms for user input (e.g., email and password) that will be submitted to the corresponding POST routes for processing authentication requests.
 
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
@@ -40,23 +44,23 @@ router.post('/login', async (req, res) => {
     where: {
       email
     }
-  });
+  }); // Define a POST route for handling user login requests. This route will receive the email and password from the request body, check if a user with the provided email exists in the database, and if so, compare the provided password with the stored password. If the credentials are valid, it will generate a JWT token, set it as a cookie in the response, and redirect the user to their profile page. If the credentials are invalid, it will render the login view with an appropriate error message indicating whether the email or password is incorrect.
 
   if (user) {
     if (user.password == password) {
       const payload = {
         id: user.id,
         email: user.email
-      };
+      }; // If the user is found in the database and the provided password matches the stored password, create a payload object containing the user's ID and email. This payload will be used to generate a JWT token that can be used for authentication in subsequent requests.
 
       const token = jwt.sign(payload, secretkey, {
         expiresIn: '3h',
-      });
+      }); // Generate a JWT token using the jsonwebtoken library's sign method, passing in the payload, secret key, and an expiration time of 3 hours. This token will be used for authenticating the user in future requests by including it in the request headers or cookies.
 
       res.cookie('token', token, {
         maxAge: 3 * 60 * 60 * 1000,
         path: '/'
-      });
+      }); // Set the generated JWT token as a cookie in the response using the res.cookie method. The cookie is named 'token', has a maximum age of 3 hours (in milliseconds), and is accessible across the entire application (path: '/'). This allows the client to store the token and include it in subsequent requests for authentication purposes.
 
       res.redirect("/user/profile");
 
@@ -66,7 +70,7 @@ router.post('/login', async (req, res) => {
   } else {
     res.render('login', { errorMessage: "the email is incorrect" });
   }
-});
+}); // Define a POST route for handling user login requests. This route will receive the email and password from the request body, check if a user with the provided email exists in the database, and if so, compare the provided password with the stored password. If the credentials are valid, it will generate a JWT token, set it as a cookie in the response, and redirect the user to their profile page. If the credentials are invalid, it will render the login view with an appropriate error message indicating whether the email or password is incorrect.
 
 router.post('/register', async (req, res) => {
   const { email, password, firstname, lastname } = req.body;
@@ -75,7 +79,7 @@ router.post('/register', async (req, res) => {
     where: {
       email
     }
-  });
+  }); // Define a POST route for user registration that checks if a user with the provided email already exists in the database, and if not, creates a new user record with the provided information (first name, last name, email, and password) and sends a response indicating that the user has been registered successfully. If a user with the same email already exists, it renders the registration view with an error message.
 
   if (user) {
     res.render('register', { errorMessage: "User already exist!" });
