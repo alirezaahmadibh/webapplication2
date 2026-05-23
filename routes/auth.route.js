@@ -14,7 +14,6 @@ router.get('/register', (req, res) => {
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const secretkey = 'your_secret_key';
-
   const user = await User.findOne({
     where: {
       email
@@ -37,7 +36,7 @@ router.post('/login', async (req, res) => {
         path: '/'
       });
 
-      res.redirect("/profile");
+      res.redirect("/user/profile");
 
     } else {
       res.render('login', { errorMessage: "the Password is incorrect" });

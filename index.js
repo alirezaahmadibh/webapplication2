@@ -5,11 +5,17 @@ const authRoutes = require('./routes/auth.route'); // Import the authentication 
 const path = require('path'); // Import the path module for handling file paths
 const app = express(); // Create an instance of the Express application
 const port = 3000; // Define the port number for the server to listen on
+const userRoute = require('./routes/user.route')
+const cookieParser = require('cookie-parser'); // Import the cookie-parser middleware to parse cookies from incoming requests
+
+app.use(cookieParser()); // Use the cookie-parser middleware to enable cookie parsing in the application
+
 
 app.use(express.urlencoded({ extended: true})); // Middleware to parse URL-encoded bodies (for form submissions)
 app.use(express.json()); // Middleware to parse JSON bodies (for API requests)
 app.use('/auth', authRoutes ) // Use the authentication routes for any requests starting with /auth
-
+app.use('/user', userRoute) 
+app.use(cookieParser()); // Use the cookie-parser middleware to enable cookie parsing in the application
 
 
 app.set('view engine', 'ejs') // Set the view engine to EJS for rendering views (e.g., login page)
