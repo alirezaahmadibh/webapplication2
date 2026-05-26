@@ -37,9 +37,18 @@ router.get('/forget-password', (req, res) => {
   res.render('forget-password');
 }); // Define GET routes for rendering the login, registration, and forget password views. These routes will serve the corresponding EJS templates when accessed, allowing users to interact with the authentication pages of the application. The views will likely include forms for user input (e.g., email and password) that will be submitted to the corresponding POST routes for processing authentication requests.
 
+
+
+router.get('/forget-password/:token', (req, res) =>{
+  res.render('password-change', {token:req.params.token })
+
+})
+
+
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   const secretkey = 'your_secret_key';
+
   const user = await User.findOne({
     where: {
       email
@@ -96,34 +105,60 @@ router.post('/register', async (req, res) => {
 }); // Define a POST route for user registration that checks if a user with the provided email already exists in the database, and if not, creates a new user record with the provided information (first name, last name, email, and password) and sends a response indicating that the user has been registered successfully. If a user with the same email already exists, it renders the registration view with an error message.
 
 
+router.post('/forget-password', async (req, res)=>{
+  const {email} = req.body
+
+  const user = await User.findOne({
+    where: {
+      email
+    }
+  })
+
+  if (user) {
+    const token = await generateToken()
+
+    console.log(token)  
+
+    await ResetPassword.create({
+      email,
+      token
+    })
+
+    console.log(token)
+    res.send({"message": "ok"})
+  } else {
+      res.redirect('/auth/login')
+  }
+})
+
 router.post('/forget-password/:token', async (req, res) => {
   const { token } = req.params; // Get the token from the URL parameters to identify the password reset request and verify its validity before allowing the user to reset their password. The token is typically generated and stored in the database when the user initiates a password reset request, and it is used to ensure that only authorized users can reset their passwords by verifying the token against the stored value in the database.
+  const { password} = req.body
 
   const reset_password = await ResetPassword.findOne({
     where: {
       token
     }
-  }); // Find the password reset request in the database using the provided token to verify its validity and ensure that it corresponds to an existing password reset request. This step is crucial for security purposes to prevent unauthorized password resets and ensure that only valid requests are processed.
+  }) 
 
   if (reset_password) {
     const user = await User.findOne({
       where: {
         email: reset_password.email
       }
-    }); // Find the user associated with the password reset request using the email stored in the ResetPassword model. This allows the application to identify which user's password needs to be reset based on the token provided in the URL parameters.
+    })
 
-    if (user) {
-      user.password = password; // Update the user's password with the new password provided in the request body. This step allows the user to reset their password after successfully verifying the token and ensuring that the password reset request is valid.
-      
-      await user.save(); // Save the updated user record to the database to persist the changes made to the user's password. This step is necessary to ensure that the new password is stored in the database and can be used for future authentication attempts. 
-      res.redirect('/auth/login'); // After successfully resetting the password, redirect the user to the login page so they can log in with their new password.
-    } else {
-      res.redirect('/auth/login'); // If the user associated with the password reset request is not found in the database, redirect to the login page as a fallback to prevent unauthorized access and ensure that only valid password reset requests are processed.
-    }
+    if (user){
+      user.password = password
+      await user.save()
+
+      res.redirect('/auth/login')
+     } else {
+        res.redirect('/auth/login')
+     }  
   } else {
-    res.redirect('/auth/login'); // If the password reset request is not found in the database (i.e., the token is invalid or expired), redirect to the login page as a fallback to prevent unauthorized access and ensure that only valid password reset requests are processed.
+      res.redirect('/auth/login')
   }
-}); // Define a POST route for handling password reset requests that takes a token as a URL parameter, verifies its validity against the ResetPassword model in the database, and if valid, allows the user to reset their password by updating the corresponding user record in the User model. After successfully resetting the password, it redirects the user to the login page. If the token is invalid or expired, it also redirects to the login page as a fallback. 
-
+})
 
 module.exports = router;
